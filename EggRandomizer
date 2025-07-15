@@ -1,175 +1,179 @@
-local players = game:GetService("Players")
-local collectionService = game:GetService("CollectionService")
-local localPlayer = players.LocalPlayer or players:GetPlayers()[1]
+-- Egg Randomizer (Red Glow Edition - All Eggs ESP)
 
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer or Players:GetPlayers()[1]
+
+if CoreGui:FindFirstChild("EggESP_GUI") then CoreGui.EggESP_GUI:Destroy() end
+
+-- Egg pet chance data
 local eggChances = {
-    ["Common Egg"] = {["Dog"] = 33, ["Bunny"] = 33, ["Golden Lab"] = 33},
-    ["Uncommon Egg"] = {["Black Bunny"] = 25, ["Chicken"] = 25, ["Cat"] = 25, ["Deer"] = 25},
-    ["Rare Egg"] = {["Orange Tabby"] = 33.33, ["Spotted Deer"] = 25, ["Pig"] = 16.67, ["Rooster"] = 16.67, ["Monkey"] = 8.33},
-    ["Legendary Egg"] = {["Cow"] = 42.55, ["Silver Monkey"] = 42.55, ["Sea Otter"] = 10.64, ["Turtle"] = 2.13, ["Polar Bear"] = 2.13},
-    ["Mythic Egg"] = {["Grey Mouse"] = 37.5, ["Brown Mouse"] = 26.79, ["Squirrel"] = 26.79, ["Red Giant Ant"] = 8.93, ["Red Fox"] = 0},
-    ["Bug Egg"] = {["Snail"] = 40, ["Giant Ant"] = 35, ["Caterpillar"] = 25, ["Praying Mantis"] = 0, ["Dragon Fly"] = 0},
-    ["Night Egg"] = {["Hedgehog"] = 47, ["Mole"] = 23.5, ["Frog"] = 21.16, ["Echo Frog"] = 8.35, ["Night Owl"] = 0, ["Raccoon"] = 0},
-    ["Bee Egg"] = {["Bee"] = 65, ["Honey Bee"] = 20, ["Bear Bee"] = 10, ["Petal Bee"] = 5, ["Queen Bee"] = 0},
-    ["Anti Bee Egg"] = {["Wasp"] = 55, ["Tarantula Hawk"] = 31, ["Moth"] = 14, ["Butterfly"] = 0, ["Disco Bee"] = 0},
-    ["Common Summer Egg"] = {["Starfish"] = 50, ["Seafull"] = 25, ["Crab"] = 25},
-    ["Rare Summer Egg"] = {["Flamingo"] = 30, ["Toucan"] = 25, ["Sea Turtle"] = 20, ["Orangutan"] = 15, ["Seal"] = 10},
-    ["Paradise Egg"] = {["Ostrich"] = 43, ["Peacock"] = 33, ["Capybara"] = 24, ["Scarlet Macaw"] = 3, ["Mimic Octopus"] = 1},
-    ["Premium Night Egg"] = {["Hedgehog"] = 50, ["Mole"] = 26, ["Frog"] = 14, ["Echo Frog"] = 10}
+    ["Common Egg"] = {{name="Dog",chance=33},{name="Bunny",chance=33},{name="Golden Lab",chance=34}},
+    ["Uncommon Egg"] = {{name="Black Bunny",chance=25},{name="Chicken",chance=25},{name="Cat",chance=25},{name="Deer",chance=25}},
+    ["Rare Egg"] = {{name="Orange Tabby",chance=33},{name="Spotted Deer",chance=25},{name="Pig",chance=17},{name="Rooster",chance=17},{name="Monkey",chance=8}},
+    ["Legendary Egg"] = {{name="Cow",chance=43},{name="Silver Monkey",chance=43},{name="Sea Otter",chance=11},{name="Turtle",chance=2},{name="Polar Bear",chance=2}},
+    ["Mythical Egg"] = {{name="Grey Mouse",chance=36},{name="Brown Mouse",chance=27},{name="Squirrel",chance=27},{name="Red Giant Ant",chance=9},{name="Red Fox",chance=2}},
+    ["Bug Egg"] = {{name="Snail",chance=40},{name="Giant Ant",chance=30},{name="Caterpillar",chance=25},{name="Praying Mantis",chance=4},{name="Dragonfly (Divine)",chance=1}},
+    ["Anti Bee Egg"] = {{name="Wasp",chance=55},{name="Tarantula Hawk",chance=30},{name="Moth",chance=13.75},{name="Butterfly",chance=1},{name="Disco Bee (Divine)",chance=0.25}},
+    ["Common Summer Egg"] = {{name="Starfish",chance=50},{name="Seagull",chance=25},{name="Crab",chance=25}},
+    ["Rare Summer Egg"] = {{name="Flamingo",chance=30},{name="Toucan",chance=25},{name="Sea Turtle",chance=20},{name="Orangutan",chance=15},{name="Seal",chance=10}},
+    ["Paradise Egg"] = {{name="Ostrich",chance=40},{name="Peacock",chance=30},{name="Capybara",chance=21},{name="Scarlet Macaw",chance=8},{name="Mimic Octopus",chance=1}},
+    ["Oasis Egg"] = {{name="Meerkat",chance=45},{name="Sand Snake",chance=34.5},{name="Axolotl",chance=15},{name="Hyacinth Macaw",chance=5},{name="Fennec Fox",chance=0.5}},
+    ["Night Egg"] = {{name="Hedgehog",chance=49},{name="Mole",chance=23.5},{name="Frog",chance=17.63},{name="Echo Frog",chance=8.23},{name="Night Owl",chance=3.53},{name="Raccoon",chance=0.12}},
+    ["Bee Egg"] = {{name="Bee",chance=65},{name="Honey Bee",chance=25},{name="Bear Bee",chance=5},{name="Petal Bee",chance=4},{name="Queen Bee",chance=1}},
+    ["Dinosaur Egg"] = {{name="Raptor",chance=35},{name="Triceratops",chance=32.5},{name="Stegosaurus",chance=28},{name="Pterodactyl",chance=3},{name="Brontosaurus",chance=1},{name="T-Rex (Divine)",chance=0.5}},
+    ["Primal Egg"] = {{name="Parasaurolophus",chance=35},{name="Iguanodon",chance=32.5},{name="Pachycephalosaurus",chance=28},{name="Dilophosaurus",chance=3},{name="Ankylosaurus",chance=1},{name="Spinosaurus (Divine)",chance=0.5}},
 }
 
-local realESP = {
-    ["Common Egg"] = true, ["Uncommon Egg"] = true, ["Rare Egg"] = true,
-    ["Common Summer Egg"] = true, ["Rare Summer Egg"] = true
-}
-
-local displayedEggs = {}
-local autoStopOn = true
-
-local function weightedRandom(options)
-    local valid = {}
-    for pet, chance in pairs(options) do
-        if chance > 0 then table.insert(valid, {pet = pet, chance = chance}) end
-    end
-    if #valid == 0 then return nil end
-    local total = 0
-    for _, v in ipairs(valid) do total += v.chance end
+local function weightedRandom(pets)
+    local total, sum = 0, 0
+    for _, p in ipairs(pets) do total += p.chance end
     local roll = math.random() * total
-    local cumulative = 0
-    for _, v in ipairs(valid) do
-        cumulative += v.chance
-        if roll <= cumulative then return v.pet end
+    for _, p in ipairs(pets) do
+        sum += p.chance
+        if roll <= sum then return p.name end
     end
-    return valid[1].pet
 end
 
-local function getNonRepeatingRandomPet(eggName, lastPet)
-    local pool = eggChances[eggName]
-    if not pool then return nil end
-    local tries, selectedPet = 0, lastPet
-    while tries < 5 do
-        local pet = weightedRandom(pool)
-        if not pet then return nil end
-        if pet ~= lastPet or math.random() < 0.3 then
-            selectedPet = pet
-            break
-        end
-        tries += 1
-    end
-    return selectedPet
-end
-
-local function createEspGui(object, labelText)
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "FakePetESP"
-    billboard.Adornee = object:FindFirstChildWhichIsA("BasePart") or object.PrimaryPart or object
-    billboard.Size = UDim2.new(0, 200, 0, 50)
-    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
-    billboard.AlwaysOnTop = true
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.new(1, 1, 1)
-    label.TextStrokeTransparency = 0
-    label.TextScaled = true
-    label.Font = Enum.Font.SourceSansBold
-    label.Text = labelText
-    label.Parent = billboard
-
-    billboard.Parent = object
-    return billboard
-end
-
-local function addESP(egg)
-    if egg:GetAttribute("OWNER") ~= localPlayer.Name then return end
-    local eggName = egg:GetAttribute("EggName")
-    local objectId = egg:GetAttribute("OBJECT_UUID")
-    if not eggName or not objectId or displayedEggs[objectId] then return end
-
-    local labelText, firstPet
-    if realESP[eggName] then
-        labelText = eggName
+local function getPetRarityColor(petName)
+    petName = petName:lower()
+    if petName:find("divine") or petName:find("rex") or petName:find("spino") or petName:find("queen") then
+        return Color3.fromRGB(255, 215, 0)
+    elseif petName:find("owl") or petName:find("polar") or petName:find("turtle") then
+        return Color3.fromRGB(170, 0, 255)
+    elseif petName:find("monkey") or petName:find("seal") or petName:find("peacock") then
+        return Color3.fromRGB(0, 140, 255)
+    elseif petName:find("cat") or petName:find("bunny") or petName:find("deer") or petName:find("chicken") then
+        return Color3.fromRGB(0, 255, 0)
     else
-        firstPet = getNonRepeatingRandomPet(eggName, nil)
-        labelText = eggName .. " | " .. (firstPet or "?")
-    end
-
-    local espGui = createEspGui(egg, labelText)
-    displayedEggs[objectId] = {
-        egg = egg,
-        gui = espGui,
-        label = espGui:FindFirstChild("TextLabel"),
-        eggName = eggName,
-        lastPet = firstPet
-    }
-end
-
-local function removeESP(egg)
-    local objectId = egg:GetAttribute("OBJECT_UUID")
-    if objectId and displayedEggs[objectId] then
-        displayedEggs[objectId].gui:Destroy()
-        displayedEggs[objectId] = nil
+        return Color3.fromRGB(255, 255, 255)
     end
 end
 
-for _, egg in collectionService:GetTagged("PetEggServer") do
-    addESP(egg)
+local function createBillboard(egg, petName)
+    local bb = Instance.new("BillboardGui", egg)
+    bb.Name = "EggESP"
+    bb.Size = UDim2.new(0, 200, 0, 50)
+    bb.AlwaysOnTop = true
+    bb.StudsOffset = Vector3.new(0, 3, 0)
+
+    local eggLabel = Instance.new("TextLabel", bb)
+    eggLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    eggLabel.Position = UDim2.new(0, 0, 0, 0)
+    eggLabel.BackgroundTransparency = 1
+    eggLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
+    eggLabel.TextStrokeTransparency = 0.2
+    eggLabel.Font = Enum.Font.GothamBold
+    eggLabel.TextScaled = true
+    eggLabel.Text = egg.Name
+
+    local petLabel = Instance.new("TextLabel", bb)
+    petLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    petLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    petLabel.BackgroundTransparency = 1
+    petLabel.TextColor3 = getPetRarityColor(petName)
+    petLabel.TextStrokeColor3 = Color3.new(1, 1, 1)
+    petLabel.TextStrokeTransparency = 0.3
+    petLabel.Font = Enum.Font.GothamBold
+    petLabel.TextScaled = true
+    petLabel.Text = petName
 end
 
-collectionService:GetInstanceAddedSignal("PetEggServer"):Connect(addESP)
-collectionService:GetInstanceRemovedSignal("PetEggServer"):Connect(removeESP)
+local function clearESP()
+    for _, egg in ipairs(Workspace:GetDescendants()) do
+        if egg:FindFirstChild("EggESP") then egg.EggESP:Destroy() end
+    end
+end
 
-local gui = Instance.new("ScreenGui")
-gui.Name = "RandomizerGUI"
+local function refreshESP()
+    for _, egg in ipairs(Workspace:GetDescendants()) do
+        if eggChances[egg.Name] and not egg:FindFirstChild("EggESP") then
+            createBillboard(egg, weightedRandom(eggChances[egg.Name]))
+        end
+    end
+end
+
+local function randomizeAllEggs()
+    for _, egg in ipairs(Workspace:GetDescendants()) do
+        if eggChances[egg.Name] then
+            if egg:FindFirstChild("EggESP") then egg.EggESP:Destroy() end
+            createBillboard(egg, weightedRandom(eggChances[egg.Name]))
+        end
+    end
+end
+
+-- 🔴 GUI
+local gui = Instance.new("ScreenGui", CoreGui)
+gui.Name = "EggESP_GUI"
 gui.ResetOnSpawn = false
-gui.Parent = localPlayer:WaitForChild("PlayerGui")
 
-local stopBtn = Instance.new("TextButton", gui)
-stopBtn.Size = UDim2.new(0, 150, 0, 40)
-stopBtn.Position = UDim2.new(1, -190, 0, 0)
-stopBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-stopBtn.TextColor3 = Color3.new(1, 1, 1)
-stopBtn.Text = "[A] Auto Stop: ON"
-stopBtn.TextScaled = true
+local mainFrame = Instance.new("Frame", gui)
+mainFrame.Size = UDim2.new(0, 180, 0, 40)
+mainFrame.Position = UDim2.new(0.78, 0, 0.1, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(45, 0, 0)
+mainFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
+mainFrame.BorderSizePixel = 2
+mainFrame.Active = true
+mainFrame.Draggable = true
 
-stopBtn.MouseButton1Click:Connect(function()
-    autoStopOn = not autoStopOn
-    stopBtn.Text = autoStopOn and "[A] Auto Stop: ON" or "[A] Auto Stop: OFF"
+local toggleBtn = Instance.new("TextButton", mainFrame)
+toggleBtn.Size = UDim2.new(1, 0, 1, 0)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
+toggleBtn.TextColor3 = Color3.new(1, 0, 0)
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.TextSize = 16
+toggleBtn.Text = "MakuScripts Menu ⏬"
+toggleBtn.AutoButtonColor = false
+
+local buttonHolder = Instance.new("Frame", mainFrame)
+buttonHolder.Position = UDim2.new(0, 0, 1, 0)
+buttonHolder.Size = UDim2.new(1, 0, 0, 90)
+buttonHolder.BackgroundTransparency = 1
+buttonHolder.Visible = false
+
+local espBtn = Instance.new("TextButton", buttonHolder)
+espBtn.Size = UDim2.new(1, 0, 0, 40)
+espBtn.Position = UDim2.new(0, 0, 0, 0)
+espBtn.BackgroundColor3 = Color3.fromRGB(90, 0, 0)
+espBtn.TextColor3 = Color3.new(1, 0.3, 0.3)
+espBtn.Font = Enum.Font.GothamBold
+espBtn.TextSize = 15
+espBtn.Text = "Egg ESP"
+
+local randBtn = Instance.new("TextButton", buttonHolder)
+randBtn.Size = UDim2.new(1, 0, 0, 40)
+randBtn.Position = UDim2.new(0, 0, 0, 45)
+randBtn.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+randBtn.TextColor3 = Color3.new(1, 0.3, 0.3)
+randBtn.Font = Enum.Font.GothamBold
+randBtn.TextSize = 15
+randBtn.Text = "Randomize Egg"
+
+-- Button logic
+local espEnabled = false
+
+espBtn.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    espBtn.Text = espEnabled and "ESP: ON" or "ESP: OFF"
+    if espEnabled then refreshESP() else clearESP() end
 end)
 
-local info = Instance.new("TextButton", gui)
-info.Size = UDim2.new(0, 30, 0, 40)
-info.Position = UDim2.new(1, -35, 0, 0)
-info.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
-info.TextColor3 = Color3.new(1, 1, 1)
-info.Text = "?"
-info.TextScaled = true
+randBtn.MouseButton1Click:Connect(randomizeAllEggs)
 
-info.MouseButton1Click:Connect(function()
-    pcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Info",
-            Text = "Auto Stop when found: Raccoon, Dragonfly, Queen Bee, Red Fox, Disco Bee, Butterfly.",
-            Duration = 5
-        })
-    end)
+toggleBtn.MouseButton1Click:Connect(function()
+    buttonHolder.Visible = not buttonHolder.Visible
+    toggleBtn.Text = buttonHolder.Visible and "MakuScripts Menu ⏫" or "MakuScripts Menu ⏬"
 end)
 
-local autoBtn = Instance.new("TextButton", gui)
-autoBtn.Size = UDim2.new(0, 150, 0, 40)
-autoBtn.Position = UDim2.new(1, -190, 0, 45)
-autoBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-autoBtn.TextColor3 = Color3.new(1, 1, 1)
-autoBtn.Text = "[B] Reroll Pet Display"
-autoBtn.TextScaled = true
-
-autoBtn.MouseButton1Click:Connect(function()
-    for objectId, data in pairs(displayedEggs) do
-        local pet = getNonRepeatingRandomPet(data.eggName, data.lastPet)
-        if pet and data.label then
-            data.label.Text = data.eggName .. " | " .. pet
-            data.lastPet = pet
+-- Live ESP auto-refresh
+RunService.Stepped:Connect(function()
+    if espEnabled then
+        for _, egg in ipairs(Workspace:GetDescendants()) do
+            if eggChances[egg.Name] and not egg:FindFirstChild("EggESP") then
+                createBillboard(egg, weightedRandom(eggChances[egg.Name]))
+            end
         end
     end
 end)
