@@ -1,11 +1,11 @@
--- Egg Randomizer (Red Glow Edition - All Eggs ESP)
-
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer or Players:GetPlayers()[1]
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 
+-- Clear previous GUI
 if CoreGui:FindFirstChild("EggESP_GUI") then CoreGui.EggESP_GUI:Destroy() end
 
 -- Egg pet chance data
@@ -27,84 +27,97 @@ local eggChances = {
     ["Primal Egg"] = {{name="Parasaurolophus",chance=35},{name="Iguanodon",chance=32.5},{name="Pachycephalosaurus",chance=28},{name="Dilophosaurus",chance=3},{name="Ankylosaurus",chance=1},{name="Spinosaurus (Divine)",chance=0.5}},
 }
 
+-- Weighted random function
 local function weightedRandom(pets)
-    local total, sum = 0, 0
+    local total = 0
     for _, p in ipairs(pets) do total += p.chance end
     local roll = math.random() * total
+    local sum = 0
     for _, p in ipairs(pets) do
         sum += p.chance
         if roll <= sum then return p.name end
     end
 end
 
+-- Get color based on pet rarity
 local function getPetRarityColor(petName)
     petName = petName:lower()
     if petName:find("divine") or petName:find("rex") or petName:find("spino") or petName:find("queen") then
-        return Color3.fromRGB(255, 215, 0)
+        return Color3.fromRGB(255, 215, 0) -- Gold
     elseif petName:find("owl") or petName:find("polar") or petName:find("turtle") then
-        return Color3.fromRGB(170, 0, 255)
+        return Color3.fromRGB(170, 0, 255) -- Purple
     elseif petName:find("monkey") or petName:find("seal") or petName:find("peacock") then
-        return Color3.fromRGB(0, 140, 255)
+        return Color3.fromRGB(0, 140, 255) -- Blue
     elseif petName:find("cat") or petName:find("bunny") or petName:find("deer") or petName:find("chicken") then
-        return Color3.fromRGB(0, 255, 0)
+        return Color3.fromRGB(0, 255, 0) -- Green
     else
-        return Color3.fromRGB(255, 255, 255)
+        return Color3.fromRGB(255, 255, 255) -- White
     end
 end
 
-local function createBillboard(egg, petName)
-    local bb = Instance.new("BillboardGui", egg)
-    bb.Name = "EggESP"
-    bb.Size = UDim2.new(0, 200, 0, 50)
-    bb.AlwaysOnTop = true
-    bb.StudsOffset = Vector3.new(0, 3, 0)
-
-    local eggLabel = Instance.new("TextLabel", bb)
+-- Create ESP function (simplified and working)
+local function createESP(egg)
+    if not egg or not egg.Parent then return end
+    
+    -- Clear existing ESP
+    if egg:FindFirstChild("EggESP") then
+        egg.EggESP:Destroy()
+    end
+    
+    -- Get predicted pet
+    local petName = eggChances[egg.Name] and weightedRandom(eggChances[egg.Name]) or "Unknown"
+    
+    -- Create BillboardGui
+    local bgui = Instance.new("BillboardGui")
+    bgui.Name = "EggESP"
+    bgui.Size = UDim2.new(4, 0, 2, 0) -- Larger size for two lines
+    bgui.AlwaysOnTop = true
+    bgui.StudsOffset = Vector3.new(0, 3, 0)
+    bgui.Adornee = egg
+    bgui.Parent = egg
+    
+    -- Egg name label
+    local eggLabel = Instance.new("TextLabel", bgui)
     eggLabel.Size = UDim2.new(1, 0, 0.5, 0)
-    eggLabel.Position = UDim2.new(0, 0, 0, 0)
+    eggLabel.Text = egg.Name
+    eggLabel.TextColor3 = Color3.new(1, 0, 0) -- Red
+    eggLabel.TextStrokeTransparency = 0
     eggLabel.BackgroundTransparency = 1
-    eggLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
-    eggLabel.TextStrokeTransparency = 0.2
     eggLabel.Font = Enum.Font.GothamBold
     eggLabel.TextScaled = true
-    eggLabel.Text = egg.Name
-
-    local petLabel = Instance.new("TextLabel", bb)
+    
+    -- Pet prediction label
+    local petLabel = Instance.new("TextLabel", bgui)
     petLabel.Size = UDim2.new(1, 0, 0.5, 0)
     petLabel.Position = UDim2.new(0, 0, 0.5, 0)
-    petLabel.BackgroundTransparency = 1
+    petLabel.Text = petName
     petLabel.TextColor3 = getPetRarityColor(petName)
-    petLabel.TextStrokeColor3 = Color3.new(1, 1, 1)
     petLabel.TextStrokeTransparency = 0.3
+    petLabel.BackgroundTransparency = 1
     petLabel.Font = Enum.Font.GothamBold
     petLabel.TextScaled = true
-    petLabel.Text = petName
 end
 
+-- Clear all ESP
 local function clearESP()
-    for _, egg in ipairs(Workspace:GetDescendants()) do
-        if egg:FindFirstChild("EggESP") then egg.EggESP:Destroy() end
-    end
-end
-
-local function refreshESP()
-    for _, egg in ipairs(Workspace:GetDescendants()) do
-        if eggChances[egg.Name] and not egg:FindFirstChild("EggESP") then
-            createBillboard(egg, weightedRandom(eggChances[egg.Name]))
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:FindFirstChild("EggESP") then
+            obj.EggESP:Destroy()
         end
     end
 end
 
-local function randomizeAllEggs()
+-- Refresh ESP on all eggs
+local function refreshESP()
+    clearESP()
     for _, egg in ipairs(Workspace:GetDescendants()) do
         if eggChances[egg.Name] then
-            if egg:FindFirstChild("EggESP") then egg.EggESP:Destroy() end
-            createBillboard(egg, weightedRandom(eggChances[egg.Name]))
+            createESP(egg)
         end
     end
 end
 
--- 🔴 GUI
+-- Create GUI
 local gui = Instance.new("ScreenGui", CoreGui)
 gui.Name = "EggESP_GUI"
 gui.ResetOnSpawn = false
@@ -135,7 +148,6 @@ buttonHolder.Visible = false
 
 local espBtn = Instance.new("TextButton", buttonHolder)
 espBtn.Size = UDim2.new(1, 0, 0, 40)
-espBtn.Position = UDim2.new(0, 0, 0, 0)
 espBtn.BackgroundColor3 = Color3.fromRGB(90, 0, 0)
 espBtn.TextColor3 = Color3.new(1, 0.3, 0.3)
 espBtn.Font = Enum.Font.GothamBold
@@ -151,29 +163,33 @@ randBtn.Font = Enum.Font.GothamBold
 randBtn.TextSize = 15
 randBtn.Text = "Randomize Egg"
 
--- Button logic
+-- Toggle logic
 local espEnabled = false
-
 espBtn.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
     espBtn.Text = espEnabled and "ESP: ON" or "ESP: OFF"
-    if espEnabled then refreshESP() else clearESP() end
+    if espEnabled then
+        refreshESP()
+    else
+        clearESP()
+    end
 end)
 
-randBtn.MouseButton1Click:Connect(randomizeAllEggs)
+randBtn.MouseButton1Click:Connect(refreshESP)
 
 toggleBtn.MouseButton1Click:Connect(function()
     buttonHolder.Visible = not buttonHolder.Visible
     toggleBtn.Text = buttonHolder.Visible and "MakuScripts Menu ⏫" or "MakuScripts Menu ⏬"
 end)
 
--- Live ESP auto-refresh
-RunService.Stepped:Connect(function()
-    if espEnabled then
-        for _, egg in ipairs(Workspace:GetDescendants()) do
-            if eggChances[egg.Name] and not egg:FindFirstChild("EggESP") then
-                createBillboard(egg, weightedRandom(eggChances[egg.Name]))
-            end
-        end
+-- Auto-refresh for new eggs
+Workspace.DescendantAdded:Connect(function(descendant)
+    if espEnabled and eggChances[descendant.Name] then
+        createESP(descendant)
     end
 end)
+
+-- Initial refresh if needed
+if espEnabled then
+    refreshESP()
+end
