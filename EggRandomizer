@@ -27,7 +27,7 @@ local eggChances = {
     ["Primal Egg"] = {{name="Parasaurolophus",chance=35},{name="Iguanodon",chance=32.5},{name="Pachycephalosaurus",chance=28},{name="Dilophosaurus",chance=3},{name="Ankylosaurus",chance=1},{name="Spinosaurus (Divine)",chance=0.5}},
 }
 
--- Weighted random function
+-- Weighted random
 local function weightedRandom(pets)
     local total = 0
     for _, p in ipairs(pets) do total += p.chance end
@@ -39,54 +39,44 @@ local function weightedRandom(pets)
     end
 end
 
--- Get color based on pet rarity
+-- Rarity color
 local function getPetRarityColor(petName)
     petName = petName:lower()
     if petName:find("divine") or petName:find("rex") or petName:find("spino") or petName:find("queen") then
-        return Color3.fromRGB(255, 215, 0) -- Gold
+        return Color3.fromRGB(255, 215, 0)
     elseif petName:find("owl") or petName:find("polar") or petName:find("turtle") then
-        return Color3.fromRGB(170, 0, 255) -- Purple
+        return Color3.fromRGB(170, 0, 255)
     elseif petName:find("monkey") or petName:find("seal") or petName:find("peacock") then
-        return Color3.fromRGB(0, 140, 255) -- Blue
+        return Color3.fromRGB(0, 140, 255)
     elseif petName:find("cat") or petName:find("bunny") or petName:find("deer") or petName:find("chicken") then
-        return Color3.fromRGB(0, 255, 0) -- Green
+        return Color3.fromRGB(0, 255, 0)
     else
-        return Color3.fromRGB(255, 255, 255) -- White
+        return Color3.fromRGB(255, 255, 255)
     end
 end
 
--- Create ESP function (simplified and working)
+-- ESP
 local function createESP(egg)
     if not egg or not egg.Parent then return end
-    
-    -- Clear existing ESP
-    if egg:FindFirstChild("EggESP") then
-        egg.EggESP:Destroy()
-    end
-    
-    -- Get predicted pet
+    if egg:FindFirstChild("EggESP") then egg.EggESP:Destroy() end
     local petName = eggChances[egg.Name] and weightedRandom(eggChances[egg.Name]) or "Unknown"
-    
-    -- Create BillboardGui
     local bgui = Instance.new("BillboardGui")
     bgui.Name = "EggESP"
-    bgui.Size = UDim2.new(4, 0, 2, 0) -- Larger size for two lines
+    bgui.Size = UDim2.new(4, 0, 2, 0)
     bgui.AlwaysOnTop = true
     bgui.StudsOffset = Vector3.new(0, 3, 0)
     bgui.Adornee = egg
     bgui.Parent = egg
-    
-    -- Egg name label
+
     local eggLabel = Instance.new("TextLabel", bgui)
     eggLabel.Size = UDim2.new(1, 0, 0.5, 0)
     eggLabel.Text = egg.Name
-    eggLabel.TextColor3 = Color3.new(1, 0, 0) -- Red
+    eggLabel.TextColor3 = Color3.new(1, 0, 0)
     eggLabel.TextStrokeTransparency = 0
     eggLabel.BackgroundTransparency = 1
     eggLabel.Font = Enum.Font.GothamBold
     eggLabel.TextScaled = true
-    
-    -- Pet prediction label
+
     local petLabel = Instance.new("TextLabel", bgui)
     petLabel.Size = UDim2.new(1, 0, 0.5, 0)
     petLabel.Position = UDim2.new(0, 0, 0.5, 0)
@@ -98,7 +88,7 @@ local function createESP(egg)
     petLabel.TextScaled = true
 end
 
--- Clear all ESP
+-- ESP refresh logic
 local function clearESP()
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj:FindFirstChild("EggESP") then
@@ -107,7 +97,6 @@ local function clearESP()
     end
 end
 
--- Refresh ESP on all eggs
 local function refreshESP()
     clearESP()
     for _, egg in ipairs(Workspace:GetDescendants()) do
@@ -117,7 +106,7 @@ local function refreshESP()
     end
 end
 
--- Create GUI
+-- GUI creation
 local gui = Instance.new("ScreenGui", CoreGui)
 gui.Name = "EggESP_GUI"
 gui.ResetOnSpawn = false
@@ -142,10 +131,11 @@ toggleBtn.AutoButtonColor = false
 
 local buttonHolder = Instance.new("Frame", mainFrame)
 buttonHolder.Position = UDim2.new(0, 0, 1, 0)
-buttonHolder.Size = UDim2.new(1, 0, 0, 90)
+buttonHolder.Size = UDim2.new(1, 0, 0, 130)
 buttonHolder.BackgroundTransparency = 1
 buttonHolder.Visible = false
 
+-- ESP button
 local espBtn = Instance.new("TextButton", buttonHolder)
 espBtn.Size = UDim2.new(1, 0, 0, 40)
 espBtn.BackgroundColor3 = Color3.fromRGB(90, 0, 0)
@@ -154,6 +144,7 @@ espBtn.Font = Enum.Font.GothamBold
 espBtn.TextSize = 15
 espBtn.Text = "Egg ESP"
 
+-- Randomizer button
 local randBtn = Instance.new("TextButton", buttonHolder)
 randBtn.Size = UDim2.new(1, 0, 0, 40)
 randBtn.Position = UDim2.new(0, 0, 0, 45)
@@ -163,8 +154,19 @@ randBtn.Font = Enum.Font.GothamBold
 randBtn.TextSize = 15
 randBtn.Text = "Randomize Egg"
 
--- Toggle logic
+-- Auto Age button
+local ageBtn = Instance.new("TextButton", buttonHolder)
+ageBtn.Size = UDim2.new(1, 0, 0, 40)
+ageBtn.Position = UDim2.new(0, 0, 0, 90)
+ageBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 0)
+ageBtn.TextColor3 = Color3.new(1, 1, 1)
+ageBtn.Font = Enum.Font.GothamBold
+ageBtn.TextSize = 15
+ageBtn.Text = "Auto Age (hold pet)"
+
+-- Button logic
 local espEnabled = false
+
 espBtn.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
     espBtn.Text = espEnabled and "ESP: ON" or "ESP: OFF"
@@ -182,14 +184,47 @@ toggleBtn.MouseButton1Click:Connect(function()
     toggleBtn.Text = buttonHolder.Visible and "MakuScripts Menu ⏫" or "MakuScripts Menu ⏬"
 end)
 
--- Auto-refresh for new eggs
+-- Auto Age logic
+local isCooldown = false
+
+ageBtn.MouseButton1Click:Connect(function()
+    if isCooldown then return end
+
+    local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+    if not tool then
+        warn("No pet equipped.")
+        return
+    end
+
+    local itemName = tool.Name
+    local currentAge = tonumber(itemName:match("Age%s*(%d+)"))
+    if not currentAge then
+        warn("Age not found in item name.")
+        return
+    end
+
+    local prefix = itemName:match("^(.-)%s*%[Age%s*%d+%]") or itemName
+
+    isCooldown = true
+    ageBtn.Text = "Spoofing..."
+
+    for i = currentAge + 1, 50 do
+        tool.Name = prefix .. "[Age " .. i .. "]"
+        task.wait(0.12)
+    end
+
+    ageBtn.Text = "Auto Age (hold pet)"
+    isCooldown = false
+end)
+
+-- Auto-refresh eggs
 Workspace.DescendantAdded:Connect(function(descendant)
     if espEnabled and eggChances[descendant.Name] then
         createESP(descendant)
     end
 end)
 
--- Initial refresh if needed
+-- Run ESP at start if needed
 if espEnabled then
     refreshESP()
 end
